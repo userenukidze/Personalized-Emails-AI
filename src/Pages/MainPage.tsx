@@ -5,6 +5,7 @@ import supabase from '../helper/supabaseClient'
 
 interface Row {
   recipient: string
+  linkedin: string
   links: string
 }
 
@@ -17,6 +18,7 @@ function MainPage() {
   const [loading, setLoading] = useState(false)
   const [selectedRows, setSelectedRows] = useState<boolean[]>([]);
   const [contextInput, setContextInput] = useState('');
+  const [newLinkedin, setNewLinkedin] = useState('')
 
   const handleToggleRow = (idx: number) => {
     setSelectedRows(prev => {
@@ -28,6 +30,7 @@ function MainPage() {
 
   const recipientRef = useRef<HTMLTextAreaElement>(null)
   const linksRef = useRef<HTMLTextAreaElement>(null)
+  const linkedinRef = useRef<HTMLTextAreaElement>(null)
 
   // Fetch rows from Supabase on mount
   useEffect(() => {
@@ -35,7 +38,7 @@ function MainPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from('Recipients & Data')
-        .select('Recipient_Mail, Links_And_Sources')
+        .select('Recipient_Mail, Links_And_Sources, Linkedin')
         .order('id', { ascending: true })
       setLoading(false)
       if (error) {
@@ -44,6 +47,7 @@ function MainPage() {
         setRows(
           data.map((row: any) => ({
             recipient: row.Recipient_Mail || '',
+            linkedin: row.Linkedin || '',
             links: row.Links_And_Sources || '',
           }))
         )
@@ -52,12 +56,16 @@ function MainPage() {
     fetchRows()
   }, [])
 
+
+
   useEffect(() => {
     if (recipientRef.current) {
       recipientRef.current.style.height = 'auto'
       recipientRef.current.style.height = recipientRef.current.scrollHeight + 'px'
     }
   }, [newRecipient])
+
+
 
   useEffect(() => {
     if (linksRef.current) {
@@ -66,34 +74,43 @@ function MainPage() {
     }
   }, [newLinks])
 
+
+
   useEffect(() => {
     setSelectedRows(selectedRows => 
       rows.map((_, i) => selectedRows[i] || false)
     );
   }, [rows]);
 
+
+
   const handleAddRow = async () => {
-    if (!newRecipient.trim() && !newLinks.trim()) return
-    setLoading(true)
-    const { error } = await supabase
-      .from('Recipients & Data')
-      .insert([
-        {
-          Recipient_Mail: newRecipient,
-          Links_And_Sources: newLinks,
-        },
-      ])
-    setLoading(false)
-    if (!error) {
-      setRows([...rows, { recipient: newRecipient, links: newLinks }])
-      setNewRecipient('')
-      setNewLinks('')
-    } else {
-      alert('Error saving to database: ' + error.message)
+     if (!newRecipient.trim() && !newLinks.trim() && !newLinkedin.trim()) return
+     setLoading(true)
+     const { error } = await supabase
+       .from('Recipients & Data')
+       .insert([
+         {
+           Recipient_Mail: newRecipient,
+           Links_And_Sources: newLinks,
+           Linkedin: newLinkedin,
+         },
+       ])
+     setLoading(false)
+     if (!error) {
+       setRows([...rows, { recipient: newRecipient, linkedin: newLinkedin, links: newLinks }])
+       setNewRecipient('')
+       setNewLinkedin('')
+       setNewLinks('')
+     } else {
+       alert('Error saving to database: ' + error.message)
     }
   }
-  const allChecked = rows.length > 0 && selectedRows.every(Boolean);
 
+
+
+
+  const allChecked = rows.length > 0 && selectedRows.every(Boolean);
   const handleToggleAllRows = (checked: boolean) => {
     setSelectedRows(rows.map(() => checked));
   };
@@ -102,10 +119,12 @@ function MainPage() {
   
 
   const handleGenerateAndSend = async () => {
-    // Format rows as array of objects with Recipient_Mail and Links_And_Sources
-    const formattedRows = rows.map(row => ({
-      Recipient_Mail: row.recipient,
-      Links_And_Sources: row.links,
+    // Only include checked recipients
+    const checkedRows = rows.filter((_, idx) => selectedRows[idx]);
+    const formattedRows = checkedRows.map(row => ({
+      name: row.recipient,
+      linkedin: row.linkedin,
+      website: row.links,
     }));
   
     const payload = {
@@ -170,10 +189,13 @@ function MainPage() {
       <TableComponent
         rows={rows}
         newRecipient={newRecipient}
+        newLinkedin={newLinkedin}
         newLinks={newLinks}
         recipientRef={recipientRef}
+        linkedinRef={linkedinRef}
         linksRef={linksRef}
         setNewRecipient={setNewRecipient}
+        setNewLinkedin={setNewLinkedin}
         setNewLinks={setNewLinks}
         handleAddRow={handleAddRow}
         loading={loading}
