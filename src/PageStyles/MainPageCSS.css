@@ -72,3 +72,34 @@ body {
     -ms-overflow-style: none;
 }
 
+.generateAndSendButton {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 32px;
+    width: 100%;
+}
+
+.supabase-btn {
+    padding: 12px 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--supabase-green);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    outline: none;
+}
+
+.supabase-btn:focus,
+.supabase-btn:hover {
+    background: #31875a;
+}
+.supabase-btn:disabled {
+    background: #2c2c2c;
+    color: #aaa;
+    cursor: not-allowed;
+}

@@ -131,3 +131,14 @@
 .align-center {
     vertical-align: middle !important;
 }
+
+
+.checkbox-cell input[type="checkbox"],
+.mainpage-table-header input[type="checkbox"] {
+    accent-color: var(--supabase-green);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    margin: 0 auto;
+    display: block;
+}

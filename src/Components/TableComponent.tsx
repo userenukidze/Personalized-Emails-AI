@@ -16,6 +16,10 @@ interface TableProps {
   setNewLinks: (v: string) => void
   handleAddRow: () => void
   loading?: boolean
+  selectedRows?: boolean[]
+  onToggleRow?: (idx: number) => void
+  onToggleAllRows?: (checked: boolean) => void
+  allChecked?: boolean
 }
 
 const TableComponent: React.FC<TableProps> = ({
@@ -27,15 +31,27 @@ const TableComponent: React.FC<TableProps> = ({
   setNewRecipient,
   setNewLinks,
   handleAddRow,
-  loading
+  loading,
+  selectedRows = [],
+  onToggleRow = () => {},
+  onToggleAllRows = () => {},
+  allChecked = false
 }) => (
   <table className="mainpage-table">
     <colgroup>
-      <col style={{ width: '40%' }} />
+      <col style={{ width: '5%' }} />
+      <col style={{ width: '35%' }} />
       <col style={{ width: '60%' }} />
     </colgroup>
     <thead>
       <tr className="mainpage-table-header-row">
+        <th className="mainpage-table-header" style={{ textAlign: 'center' }}>
+          <input
+            type="checkbox"
+            checked={!!allChecked}
+            onChange={e => onToggleAllRows(e.target.checked)}
+          />
+        </th>
         <th className="mainpage-table-header" style={{ textAlign: 'center' }}>Recipient Mail</th>
         <th className="mainpage-table-header">Links &amp; Sources</th>
       </tr>
@@ -43,11 +59,19 @@ const TableComponent: React.FC<TableProps> = ({
     <tbody>
       {rows.map((row, idx) => (
         <tr key={idx}>
+          <td className="mainpage-table-cell checkbox-cell" style={{ textAlign: 'center' }}>
+            <input
+              type="checkbox"
+              checked={!!selectedRows[idx]}
+              onChange={() => onToggleRow(idx)}
+            />
+          </td>
           <td className="mainpage-table-cell scrollable-cell recipient-cell">{row.recipient}</td>
           <td className="mainpage-table-cell scrollable-cell">{row.links}</td>
         </tr>
       ))}
       <tr>
+        <td className="mainpage-table-cell checkbox-cell"></td>
         <td className="mainpage-table-cell recipient-cell">
           <textarea
             ref={recipientRef}
