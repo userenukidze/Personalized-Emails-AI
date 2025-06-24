@@ -19,6 +19,11 @@ function MainPage() {
   const [selectedRows, setSelectedRows] = useState<boolean[]>([]);
   const [contextInput, setContextInput] = useState('');
   const [newLinkedin, setNewLinkedin] = useState('')
+  const [exampleScript, setExampleScript] = useState('');
+  const [sendLoading, setSendLoading] = useState(false);
+  const [generatedEmails, setGeneratedEmails] = useState<{ [idx: number]: string }>({});
+  const [generatingRows, setGeneratingRows] = useState<number[]>([]);
+  
 
   const handleToggleRow = (idx: number) => {
     setSelectedRows(prev => {
@@ -43,6 +48,7 @@ function MainPage() {
       setLoading(false)
       if (error) {
         alert('Error fetching data: ' + error.message)
+        console.log(error)
       } else if (data) {
         setRows(
           data.map((row: any) => ({
@@ -104,6 +110,7 @@ function MainPage() {
        setNewLinks('')
      } else {
        alert('Error saving to database: ' + error.message)
+       console.log(error)
     }
   }
 
@@ -119,8 +126,12 @@ function MainPage() {
   
 
   const handleGenerateAndSend = async () => {
-    // Only include checked recipients
     const checkedRows = rows.filter((_, idx) => selectedRows[idx]);
+    const checkedIndexes = rows.map((_, idx) => idx).filter(idx => selectedRows[idx]);
+    setGeneratingRows(checkedIndexes);
+    setSendLoading(true);
+    setGeneratedEmails({});
+  
     const formattedRows = checkedRows.map(row => ({
       name: row.recipient,
       linkedin: row.linkedin,
@@ -129,6 +140,7 @@ function MainPage() {
   
     const payload = {
       context: contextInput,
+      exampleScript: exampleScript,
       recipients: formattedRows,
     };
   
@@ -138,16 +150,54 @@ function MainPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const result = await response.json();
-      alert(result.message || 'Request sent!');
+  
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+  
+      while (true) {
+        if (!reader) break;
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+  
+        let parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+  
+        for (const part of parts) {
+          if (part.startsWith('data: ')) {
+            const data = JSON.parse(part.replace('data: ', ''));
+            // Find the index of this recipient in checkedRows
+            const idx = checkedRows.findIndex(r =>
+              r.recipient === data.recipient.name &&
+              r.linkedin === data.recipient.linkedin &&
+              r.links === data.recipient.website
+            );
+            if (idx !== -1) {
+              setGeneratedEmails(prev => ({
+                ...prev,
+                [checkedIndexes[idx]]: data.openai
+              }));
+            }
+          }
+          if (part.startsWith('event: end')) {
+            setSendLoading(false);
+            setGeneratingRows([]);
+          }
+        }
+      }
     } catch (err) {
       alert('Failed to send request' + (err instanceof Error ? `: ${err.message}` : ''));
+      setSendLoading(false);
+      setGeneratingRows([]);
     }
   };
 
   return (
     <div className="container">
 
+
+      <h1 style={{marginTop:50}}>Enter Context:</h1>
       <div className="requestContextInput">
         <textarea
           className="growing-textarea"
@@ -175,14 +225,44 @@ function MainPage() {
         />
       </div>
 
+
+      <h1 style={{marginTop:50}}>Enter Example Script:</h1>
+      <div className="requestContextInput">
+        <textarea
+          className="growing-textarea"
+          style={{
+            minHeight: '100px',
+            maxHeight: '400px',
+            overflow: 'auto',
+            borderRadius: '12px',
+            resize: 'none',
+            padding: '10px',
+            width: '100%',
+            boxSizing: 'border-box',
+            scrollbarWidth: 'none', // Firefox
+            msOverflowStyle: 'none', // IE 10+
+          }}
+          rows={1}
+          placeholder="Enter your example script here..."
+          value={exampleScript}
+          onChange={e => setExampleScript(e.target.value)}
+          onInput={e => {
+            const target = e.target as HTMLTextAreaElement
+            target.style.height = 'auto'
+            target.style.height = Math.min(target.scrollHeight, 400) + 'px'
+          }}
+        />
+      </div>
+
       <div className="generateAndSendButton">
-        <button
-          className="supabase-btn"
-          onClick={handleGenerateAndSend}
-          disabled={rows.length === 0}
-        >
-          Generate &amp; Send
-        </button>
+      <button
+        className="supabase-btn"
+        onClick={handleGenerateAndSend}
+        disabled={rows.length === 0 || sendLoading}
+      >
+        {sendLoading ? "Generating..." : "Generate & Send"}
+      </button>
+
       </div>
       
       <div className="mainpage-table-wrapper">
@@ -203,6 +283,9 @@ function MainPage() {
         onToggleRow={handleToggleRow}
         onToggleAllRows={handleToggleAllRows}
         allChecked={allChecked}
+        generatedEmails={generatedEmails}
+        generatingRows={generatingRows}
+
       />
       </div>
 
