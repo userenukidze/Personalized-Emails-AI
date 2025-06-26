@@ -1,0 +1,31 @@
+:root {
+    --supabase-green: #3da175;
+    --table-bg: #212121;
+    --table-header-bg: #171717;
+    --table-border: #2c2c2c;
+    --table-row-border: #171717;
+    --font-family: 'DM Sans', 'Lato', Arial, sans-serif;
+    --text-main: #ddeaeb;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #171717;
+    color: var(--text-main);
+    font-family: var(--font-family);
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80%;
+    margin: auto;
+    padding: 32px;
+    font-family: var(--font-family);
+}

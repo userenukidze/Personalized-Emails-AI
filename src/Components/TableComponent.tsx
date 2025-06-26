@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import "../ComponentStyles/TableComponentCSS.css"
 import { MdMarkEmailRead } from "react-icons/md";
 import { MdOutlineMailOutline } from "react-icons/md";
-
+import { PulseLoader  } from "react-spinners";
 
 interface Row {
   recipient: string
@@ -98,11 +98,11 @@ const TableComponent: React.FC<TableProps> = ({
                   {generatingRows.includes(idx)
                     ? (generatedEmails[idx]
                         ? <MdMarkEmailRead color='#3da175'/>
-                        : <span className="v-btn-spinner"></span>
+                        : <PulseLoader  size={3} speedMultiplier={0.6} margin={2} color={"#3da175"} />
                       )
                     : <MdOutlineMailOutline/>
                   }
-                </button>
+                 </button>
               </td>
               <td className="mainpage-table-cell scrollable-cell recipient-cell">{row.recipient}</td>
               <td className="mainpage-table-cell scrollable-cell">{row.linkedin}</td>
@@ -163,8 +163,8 @@ const TableComponent: React.FC<TableProps> = ({
               <div className="popup-box" onClick={e => e.stopPropagation()}>
                 <span className="popup-close" onClick={() => setPopupIdx(null)}>&times;</span>
                 <div>
-                  <strong>Generated Email:</strong>
-                  <div style={{ marginTop: 16, whiteSpace: 'pre-wrap', textAlign: 'left' }}>
+                  <strong style={{fontSize: '22px'}}>Generated Email:</strong>
+                  <div style={{ marginTop: 40, whiteSpace: 'pre-wrap', textAlign: 'left',fontSize:20 }}>
                     {generatedEmails && generatedEmails[popupIdx]
                       ? generatedEmails[popupIdx]
                       : <span style={{ color: '#aaa' }}>No generated email for this recipient.</span>}

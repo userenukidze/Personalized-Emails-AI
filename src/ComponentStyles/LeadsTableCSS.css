@@ -1,20 +1,19 @@
-.container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 80%;
-    margin: auto;
-    padding: 32px;
-    font-family: var(--font-family);
+/* LeadsTable uses the same styles as TableComponent */
+:root {
+    --supabase-green: #3da175;
+    --table-bg: #212121;
+    --table-header-bg: #171717;
+    --table-border: #2c2c2c;
+    --table-row-border: #171717;
+    --font-family: 'DM Sans', 'Lato', Arial, sans-serif;
+    --text-main: #ddeaeb;
 }
 
-
-.mainpage-table-wrapper {
+.leads-table-wrapper {
     width: 100%;
-    margin-top: 100px;
 }
 
-.mainpage-table {
+.leads-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
@@ -26,11 +25,11 @@
     border: 1px solid var(--table-border);
 }
 
-.mainpage-table-header-row {
+.leads-table-header-row {
     background: var(--table-header-bg);
 }
 
-.mainpage-table-header {
+.leads-table-header {
     text-align: center;
     padding: 16px;
     font-weight: 600;
@@ -38,20 +37,21 @@
     color: var(--text-main);
 }
 
-.mainpage-table-cell {
+.leads-table-cell {
     padding: 14px 16px;
     border-bottom: 1px solid var(--table-row-border);
     vertical-align: top;
     color: var(--text-main);
 }
 
-.mainpage-input-row {
+.leads-input-row {
     display: flex;
     gap: 8px;
     border-bottom: none;
 }
 
-.mainpage-input {
+.leads-input,
+.leads-textarea {
     flex: 1;
     width: 100%;
     padding: 8px 12px;
@@ -66,11 +66,12 @@
     transition: border 0.2s;
 }
 
-.mainpage-input:focus {
+.leads-input:focus,
+.leads-textarea:focus {
     border: 1.5px solid var(--supabase-green);
 }
 
-.mainpage-save-btn {
+.leads-save-btn {
     padding: 8px 18px;
     border-radius: 8px;
     border: none;
@@ -82,11 +83,11 @@
     transition: background 0.2s;
 }
 
-.mainpage-save-btn:hover {
+.leads-save-btn:hover {
     background: #31875a;
 }
 
-.mainpage-textarea {
+.leads-textarea {
     resize: none;
     min-height: 36px;
     max-height: 160px;
@@ -95,11 +96,11 @@
     -ms-overflow-style: none; /* IE and Edge */
 }
 
-.mainpage-textarea::-webkit-scrollbar {
+.leads-textarea::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
 }
 
-.scrollable-cell {
+.leads-scrollable-cell {
     max-height: 160px;
     overflow-y: auto;
     vertical-align: top;
@@ -108,44 +109,17 @@
     -ms-overflow-style: none; /* IE and Edge */
 }
 
-.scrollable-cell::-webkit-scrollbar {
+.leads-scrollable-cell::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
 }
 
-.recipient-cell {
+.leads-recipient-cell {
     text-align: center;
     vertical-align: middle;
 }
 
-.email-cell {
-    padding: 16px 16px !important; /* More vertical and horizontal padding */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    text-align: center;
-    vertical-align: middle;
-}
-
-.email-cell-inner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    width: 100%;
-    min-height: 32px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.align-center {
-    vertical-align: middle !important;
-}
-
-
-.checkbox-cell input[type="checkbox"],
-.mainpage-table-header input[type="checkbox"] {
+.leads-checkbox-cell input[type="checkbox"],
+.leads-table-header input[type="checkbox"] {
     accent-color: var(--supabase-green);
     width: 18px;
     height: 18px;
@@ -154,55 +128,25 @@
     display: block;
 }
 
-.checkbox-cell {
+.leads-checkbox-cell {
     text-align: center;
     vertical-align: middle !important;
     height: 100%;
-  }
-  
-  .checkbox-cell,
-.mainpage-table-header.checkbox-header {
-  text-align: center;
-  vertical-align: middle !important;
-  padding: 0 !important;
-  width: 40px;
 }
 
-  .checkbox-cell input[type="checkbox"] {
-    vertical-align: middle;
-    margin: 0;
-    position: relative;
-    top: 0;
-    left: 0;
-    transform: translateY(2px); /* Adjust this value if needed for perfect centering */
-    /* Remove box-shadow or border if any default style is interfering */
-  }
-
-  .checkbox-cell input[type="checkbox"],
-.mainpage-table-header.checkbox-header input[type="checkbox"] {
-  margin: 0;
-  position: relative;
-  left: 0;
-  top: 0;
-  transform: none;
-  display: inline-block;
-}
-
-/* ...existing styles... */
-
-.v-btn-cell {
+.leads-v-btn-cell {
     text-align: center;
     vertical-align: middle;
     width: 40px;
 }
 
-.v-btn {
+.leads-v-btn {
     width: 40px;
     height: 40px;
-    border-radius: 8px; /* square with rounded corners */
+    border-radius: 8px;
     border: 1.5px solid var(--table-border);
     background: var(--table-header-bg);
-    color: #fff; /* plain white V */
+    color: #fff;
     font-size: 18px;
     font-weight: bold;
     display: flex;
@@ -214,13 +158,13 @@
     outline: none;
 }
 
-.v-btn:hover, .v-btn:focus {
+.leads-v-btn:hover, .leads-v-btn:focus {
     background: var(--table-bg);
     border: 1.5px solid var(--supabase-green);
     color: #fff;
 }
 
-.popup-overlay {
+.leads-popup-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.35);
@@ -230,7 +174,7 @@
     z-index: 1000;
 }
 
-.popup-box {
+.leads-popup-box {
     background: var(--table-bg);
     color: var(--text-main);
     border-radius: 12px;
@@ -241,10 +185,10 @@
     box-shadow: 0 4px 24px rgba(0,0,0,0.18);
     position: relative;
     text-align: center;
-    border: 1px solid var(--table-border); /* Added border to match table */
+    border: 1px solid var(--table-border);
 }
 
-.popup-close {
+.leads-popup-close {
     position: absolute;
     top: 12px;
     right: 25px;
@@ -254,21 +198,26 @@
     font-weight: bold;
     transition: color 0.2s;
 }
-.popup-close:hover {
+.leads-popup-close:hover {
     color: #fff;
 }
 
-.v-btn-spinner {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    border: 2.5px solid #ccc;
-    border-top: 2.5px solid var(--supabase-green);
-    border-radius: 50%;
-    animation: v-spin 0.7s linear infinite;
-    margin: 0 auto;
-  }
-  @keyframes v-spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
-  }
+.pagination-controls button {
+    background: var(--table-header-bg) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--table-border) !important;
+    border-radius: 8px;
+    margin: 0 2px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+
+.pagination-controls button.active,
+.pagination-controls button:active {
+    background: var(--table-bg) !important;
+    color: var(--text-main) !important;
+    border: 1.5px solid var(--table-border) !important;
+}

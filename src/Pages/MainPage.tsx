@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import '../PageStyles/MainPageCSS.css'
 import TableComponent from '../Components/TableComponent'
 import supabase from '../helper/supabaseClient'
+import Navbar from '../Components/Navbar'
 
 interface Row {
   recipient: string
@@ -195,6 +196,8 @@ function MainPage() {
 
   return (
     <div className="container">
+
+      <Navbar/>
 
 
       <h1 style={{marginTop:50}}>Enter Context:</h1>

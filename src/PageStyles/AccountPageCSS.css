@@ -1,0 +1,89 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 90%;
+    margin: auto;
+}
+
+.account-page.large {
+  width: 100%;
+  max-width: 500px;
+  margin: 60px auto;
+  padding: 40px 16px;
+  background: var(--table-bg);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--table-border);
+}
+
+.account-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.account-form input[type="text"],
+.account-form input[type="email"] {
+  padding: 12px 14px;
+  border: 1px solid var(--table-border);
+  border-radius: 8px;
+  background: var(--table-header-bg);
+  color: var(--text-main);
+  font-size: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-bottom: 4px;
+  font-family: var(--font-family);
+}
+
+.account-form input[type="text"]:focus,
+.account-form input[type="email"]:focus {
+    outline: none;
+    border-color: var(--supabase-green);
+    box-shadow: 0 0 0 2px #3da17533;
+    background: var(--table-bg);
+}
+
+.account-page h2 {
+  margin-bottom: 24px;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.account-page button {
+  padding: 10px 0;
+  width: 100%;
+  background: var(--supabase-green);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+  margin-top: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.account-page button:hover {
+  background: #31875a;
+  color: #fff;
+  transform: translateY(-3px);
+}
+
+.success-message {
+  color: #3da175;
+  margin-top: 16px;
+  font-size: 15px;
+}
+
+.account-page .error-message {
+  color: #d32f2f;
+  margin-top: 16px;
+  font-size: 15px;
+}
