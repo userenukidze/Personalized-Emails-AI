@@ -19,6 +19,7 @@
 .submissions,
 .questionsPage,
 .ReviewsPage,
+.emails,
 .reviews {
     height: 60px;
     width: 60px;
@@ -41,16 +42,17 @@
 .submissions:hover,
 .questionsPage:hover,
 .ReviewsPage:hover,
+.emails:hover,
 .reviews:hover {
     transform: translateY(-3px);
     color: #fff;
 }
 
-.main, .LeadListsContainer, .account, .admin, .submissions, .questionsPage, .ReviewsPage, .reviews {
+.main, .LeadListsContainer, .account, .admin, .submissions, .questionsPage, .ReviewsPage, .reviews, .emails {
     transition: transform 0.3s ease;
     cursor: pointer;
 }
 
-.main:hover, .LeadListsContainer:hover, .account:hover, .admin:hover, .submissions:hover, .questionsPage:hover, .ReviewsPage:hover, .reviews:hover {
+.main:hover, .LeadListsContainer:hover, .account:hover, .admin:hover, .submissions:hover, .questionsPage:hover, .ReviewsPage:hover, .reviews:hover, .emails:hover {
     transform: translateY(-3px);
 }

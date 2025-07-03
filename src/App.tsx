@@ -7,6 +7,8 @@ import Wrapper from './Pages/Wrapper'; // Adjust the path if needed
 import LeadListsContainer from './Pages/LeadListsContainer';
 import AccountPage from './Pages/AccountPage';
 import LeadList from './Pages/LeadList';
+import TestEmailVerification from './Pages/testEmailVerification';
+import AddEmails from './Pages/AddEmails';
 
 function App() {
   return (
@@ -52,6 +54,17 @@ function App() {
             </Wrapper>
           }
         />
+        <Route
+          path="/manage-emails"
+          element={
+            <Wrapper>
+              <AddEmails/>
+            </Wrapper>
+          }
+        />
+
+
+        
       </Routes>
     </Router>
   )

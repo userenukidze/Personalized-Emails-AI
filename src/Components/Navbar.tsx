@@ -4,6 +4,7 @@ import { PiCardsFill } from "react-icons/pi";
 import { IoFileTrayFull } from "react-icons/io5";
 import { MdAccountCircle } from "react-icons/md";
 import { useNavigate, useLocation } from 'react-router-dom';
+import { MdEmail } from "react-icons/md";
 import { FaMarker } from "react-icons/fa";
 
 function Navbar() {
@@ -26,6 +27,13 @@ function Navbar() {
             <IoFileTrayFull
               size={25}
               color={location.pathname === "/lead-lists-container" ? activeColor : undefined}
+            />
+        </div>
+
+        <div className="emails" onClick={() => navigate('/manage-emails')}>
+            <MdEmail
+              size={25}
+              color={location.pathname === "/manage-emails" ? activeColor : undefined}
             />
         </div>
 
