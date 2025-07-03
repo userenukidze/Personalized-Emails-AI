@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import "../PageStyles/LeadListsContainerCSS.css"
 import Navbar from '../Components/Navbar'
 import supabase from '../helper/supabaseClient'
+import { FaEdit } from "react-icons/fa";
 
 function LeadListsContainer() {
   const [showForm, setShowForm] = useState(false)
@@ -153,7 +154,7 @@ function LeadListsContainer() {
                   {list.created_at && new Date(list.created_at).toLocaleDateString()}
                 </div>
               </div>
-              <button
+              <div
                 className="edit-leadlist-btn"
                 style={{
                   position: 'absolute',
@@ -162,8 +163,8 @@ function LeadListsContainer() {
                   zIndex: 2,
                   padding: '2px 10px',
                   borderRadius: 6,
-                  border: '1px solid #bbb',
-                  background: '#f5f5f5',
+                  // border: '1px solid #bbb',
+                  // background: '#f5f5f5',
                   cursor: 'pointer'
                 }}
                 onClick={e => {
@@ -171,8 +172,10 @@ function LeadListsContainer() {
                   openEdit(list);
                 }}
               >
-                Edit
-              </button>
+                
+                <FaEdit color='#3da175' size={20}/>
+
+              </div>
             </div>
           ))}
         </div>

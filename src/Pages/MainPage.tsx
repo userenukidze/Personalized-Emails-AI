@@ -10,30 +10,36 @@ interface Row {
   links: string
 }
 
-const initialRows: Row[] = []
-
 function MainPage() {
+  // Lead list and email selection
+  const [leadLists, setLeadLists] = useState<any[]>([])
+  const [leadListsLoading, setLeadListsLoading] = useState(false)
+  const [showLeadListsPopup, setShowLeadListsPopup] = useState(false)
+  const [selectedLeadList, setSelectedLeadList] = useState<any | null>(null)
+
+  const [emails, setEmails] = useState<any[]>([])
+  const [emailsLoading, setEmailsLoading] = useState(false)
+  const [showEmailsPopup, setShowEmailsPopup] = useState(false)
+  const [selectedEmail, setSelectedEmail] = useState<any | null>(null)
+
+  // Table and script/context state
   const [rows, setRows] = useState<Row[]>([])
   const [newRecipient, setNewRecipient] = useState('')
   const [newLinks, setNewLinks] = useState('')
+  const [newLinkedin, setNewLinkedin] = useState('')
   const [loading, setLoading] = useState(false)
   const [selectedRows, setSelectedRows] = useState<boolean[]>([])
   const [contextInput, setContextInput] = useState('')
-  const [newLinkedin, setNewLinkedin] = useState('')
   const [exampleScript, setExampleScript] = useState('')
   const [sendLoading, setSendLoading] = useState(false)
   const [generatedEmails, setGeneratedEmails] = useState<{ [idx: number]: string }>({})
   const [generatingRows, setGeneratingRows] = useState<number[]>([])
-  const [showLeadListsPopup, setShowLeadListsPopup] = useState(false)
-  const [leadLists, setLeadLists] = useState<any[]>([])
-  const [leadListsLoading, setLeadListsLoading] = useState(false)
-  const [selectedLeadList, setSelectedLeadList] = useState<any | null>(null)
 
   const recipientRef = useRef<HTMLTextAreaElement>(null)
   const linksRef = useRef<HTMLTextAreaElement>(null)
   const linkedinRef = useRef<HTMLTextAreaElement>(null)
 
-
+  // Restore from localStorage
   useEffect(() => {
     const savedContext = localStorage.getItem('contextInput')
     if (savedContext) setContextInput(savedContext)
@@ -41,22 +47,31 @@ function MainPage() {
     if (savedScript) setExampleScript(savedScript)
     const savedLeadList = localStorage.getItem('selectedLeadList')
     if (savedLeadList) setSelectedLeadList(JSON.parse(savedLeadList))
+    const savedEmail = localStorage.getItem('selectedEmail')
+    if (savedEmail) setSelectedEmail(JSON.parse(savedEmail))
   }, [])
-  
+
   useEffect(() => {
     localStorage.setItem('contextInput', contextInput)
   }, [contextInput])
-  
+
   useEffect(() => {
     localStorage.setItem('exampleScript', exampleScript)
   }, [exampleScript])
-  
+
   useEffect(() => {
     if (selectedLeadList)
       localStorage.setItem('selectedLeadList', JSON.stringify(selectedLeadList))
     else
       localStorage.removeItem('selectedLeadList')
   }, [selectedLeadList])
+
+  useEffect(() => {
+    if (selectedEmail)
+      localStorage.setItem('selectedEmail', JSON.stringify(selectedEmail))
+    else
+      localStorage.removeItem('selectedEmail')
+  }, [selectedEmail])
 
   // Fetch lead lists for popup
   useEffect(() => {
@@ -72,6 +87,28 @@ function MainPage() {
         })
     }
   }, [showLeadListsPopup])
+
+  // Fetch emails for popup
+  useEffect(() => {
+    if (showEmailsPopup) {
+      setEmailsLoading(true)
+      supabase.auth.getUser().then(({ data }) => {
+        if (!data?.user?.id) {
+          setEmails([])
+          setEmailsLoading(false)
+          return
+        }
+        supabase
+          .from('nylas_tokens')
+          .select('id, email, provider, grant_id')
+          .eq('user_id', data.user.id)
+          .then(({ data, error }) => {
+            setEmailsLoading(false)
+            if (!error && data) setEmails(data)
+          })
+      })
+    }
+  }, [showEmailsPopup])
 
   // Fetch leads for selected lead list
   useEffect(() => {
@@ -100,21 +137,7 @@ function MainPage() {
   }, [selectedLeadList])
 
   useEffect(() => {
-    if (recipientRef.current) {
-      recipientRef.current.style.height = 'auto'
-      recipientRef.current.style.height = recipientRef.current.scrollHeight + 'px'
-    }
-  }, [newRecipient])
-
-  useEffect(() => {
-    if (linksRef.current) {
-      linksRef.current.style.height = 'auto'
-      linksRef.current.style.height = linksRef.current.scrollHeight + 'px'
-    }
-  }, [newLinks])
-
-  useEffect(() => {
-    setSelectedRows(selectedRows => 
+    setSelectedRows(selectedRows =>
       rows.map((_, i) => selectedRows[i] || false)
     )
   }, [rows])
@@ -175,6 +198,8 @@ function MainPage() {
       context: contextInput,
       exampleScript: exampleScript,
       recipients: formattedRows,
+      fromEmail: selectedEmail?.email,
+      grantId: selectedEmail?.grant_id
     }
 
     try {
@@ -230,26 +255,9 @@ function MainPage() {
       <Navbar />
 
       {/* Load a Lead List Button */}
-      <div style={{ marginTop: 32, marginBottom: 24 }}>
-        <button
-          style={{
-            background: 'var(--table-header-bg)',
-            color: 'var(--text-main)',
-            border: '1px solid var(--table-border)',
-            borderRadius: 8,
-            padding: '10px 28px',
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, border 0.2s'
-          }}
-          onClick={() => setShowLeadListsPopup(true)}
-        >
-          Load a Lead List
-        </button>
-      </div>
+      
 
-      {/* Popup for Lead Lists */}
+      {/* Lead List Popup */}
       {showLeadListsPopup && (
         <div className="popup-overlay" onClick={() => setShowLeadListsPopup(false)}>
           <div
@@ -291,60 +299,142 @@ function MainPage() {
         </div>
       )}
 
-<h1 style={{ marginTop: 50 }}>Enter Context:</h1>
-      <div className="requestContextInput">
-        <textarea
-          className="growing-textarea"
-          style={{
-            minHeight: '80px', // Increased from 40px to 80px
-            maxHeight: '400px',
-            overflow: 'auto',
-            borderRadius: '12px',
-            resize: 'none',
-            padding: '10px',
-            width: '100%',
-            boxSizing: 'border-box',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-          rows={3} // Increased from 1 to 3 for initial height
-          placeholder="Enter your context here..."
-          value={contextInput}
-          onChange={e => setContextInput(e.target.value)}
-          onInput={e => {
-            const target = e.target as HTMLTextAreaElement
-            target.style.height = 'auto'
-            target.style.height = Math.min(target.scrollHeight, 400) + 'px'
-          }}
-        />
-      </div>
+      {/* Email Popup */}
+      {showEmailsPopup && (
+        <div className="popup-overlay" onClick={() => setShowEmailsPopup(false)}>
+          <div
+            className="popup-box"
+            style={{ minWidth: 400, maxWidth: 700, minHeight: 300 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <span
+              className="popup-close"
+              onClick={() => setShowEmailsPopup(false)}
+            >
+              &times;
+            </span>
+            <h2 style={{ marginBottom: 24 }}>Select an Email</h2>
+            {emailsLoading ? (
+              <div>Loading...</div>
+            ) : (
+              <div className="leadlists-grid">
+                {emails.map(emailObj => (
+                  <div
+                    className="leadlist-card"
+                    key={emailObj.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setSelectedEmail(emailObj)
+                      setShowEmailsPopup(false)
+                    }}
+                  >
+                    <div className="leadlist-card-title">{emailObj.email}</div>
+                    <div className="leadlist-card-desc">{emailObj.provider}</div>
+                    <div className="leadlist-card-date">Grant ID: {emailObj.grant_id}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-      <h1 style={{ marginTop: 50 }}>Enter Example Script:</h1>
-      <div className="requestContextInput">
-        <textarea
-          className="growing-textarea"
-          style={{
-            minHeight: '100px',
-            maxHeight: '400px',
-            overflow: 'auto',
-            borderRadius: '12px',
-            resize: 'none',
-            padding: '10px',
-            width: '100%',
-            boxSizing: 'border-box',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-          rows={1}
-          placeholder="Enter your example script here..."
-          value={exampleScript}
-          onChange={e => setExampleScript(e.target.value)}
-          onInput={e => {
-            const target = e.target as HTMLTextAreaElement
-            target.style.height = 'auto'
-            target.style.height = Math.min(target.scrollHeight, 400) + 'px'
-          }}
-        />
+      {/* Section for context, script, and choose email */}
+      <div
+        style={{
+          background: 'var(--table-header-bg, #f8fafc)',
+          border: '1px solid var(--table-border, #e9e9e9)',
+          borderRadius: 16,
+          padding: 32,
+          marginTop: 40,
+          marginBottom: 40,
+          width: '100%',
+          maxWidth: '100%',
+          marginLeft: 0,
+          marginRight: 0,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <h1 style={{ margin: 0 }}>Context & Script</h1>
+          <button
+            style={{
+              background: 'var(--table-header-bg)',
+              color: 'var(--text-main)',
+              border: '1px solid var(--table-border)',
+              borderRadius: 8,
+              padding: '10px 28px',
+              fontWeight: 600,
+              fontSize: 16,
+              cursor: 'pointer',
+              transition: 'background 0.2s, color 0.2s, border 0.2s'
+            }}
+            onClick={() => setShowEmailsPopup(true)}
+          >
+            Choose Email
+          </button>
+        </div>
+        {selectedEmail && (
+          <div style={{ margin: '16px 0 0 0', fontWeight: 500, color: '#3da175' }}>
+            Sending from: {selectedEmail.email}
+          </div>
+        )}
+        <div style={{ marginTop: 32 }}>
+          <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Context:</label>
+          <textarea
+            className="growing-textarea"
+            style={{
+              minHeight: '100px',
+              maxHeight: '400px',
+              overflow: 'auto',
+              borderRadius: '12px',
+              resize: 'none',
+              padding: '10px',
+              width: '100%',
+              boxSizing: 'border-box',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              marginTop: 8,
+            }}
+            rows={4}
+            placeholder="Enter your context here..."
+            value={contextInput}
+            onChange={e => setContextInput(e.target.value)}
+            onInput={e => {
+              const target = e.target as HTMLTextAreaElement
+              target.style.height = 'auto'
+              target.style.height = Math.min(target.scrollHeight, 400) + 'px'
+            }}
+          />
+        </div>
+        <div style={{ marginTop: 32 }}>
+          <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Example Script:</label>
+          <textarea
+            className="growing-textarea"
+            style={{
+              minHeight: '100px',
+              maxHeight: '400px',
+              overflow: 'auto',
+              borderRadius: '12px',
+              resize: 'none',
+              padding: '10px',
+              width: '100%',
+              boxSizing: 'border-box',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              marginTop: 8,
+            }}
+            rows={4}
+            placeholder="Enter your example script here..."
+            value={exampleScript}
+            onChange={e => setExampleScript(e.target.value)}
+            onInput={e => {
+              const target = e.target as HTMLTextAreaElement
+              target.style.height = 'auto'
+              target.style.height = Math.min(target.scrollHeight, 400) + 'px'
+            }}
+          />
+        </div>
       </div>
 
       <div className="generateAndSendButton">
@@ -355,6 +445,31 @@ function MainPage() {
         >
           {sendLoading ? "Generating..." : "Generate & Send"}
         </button>
+      </div>
+
+
+      <div style={{ marginTop: 50, marginBottom: 24,width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+        <button
+          style={{
+            background: 'var(--table-header-bg)',
+            color: 'var(--text-main)',
+            border: '1px solid var(--table-border)',
+            borderRadius: 8,
+            padding: '10px 28px',
+            fontWeight: 600,
+            fontSize: 16,
+            cursor: 'pointer',
+            transition: 'background 0.2s, color 0.2s, border 0.2s'
+          }}
+          onClick={() => setShowLeadListsPopup(true)}
+        >
+          Load a Lead List
+        </button>
+        {selectedLeadList && (
+          <span style={{ marginLeft: 18, fontWeight: 500, color: '#3da175' }}>
+            Loaded: {selectedLeadList.lead_list_name}
+          </span>
+        )}
       </div>
 
       <div className="mainpage-table-wrapper">
