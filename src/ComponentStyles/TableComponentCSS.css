@@ -100,17 +100,36 @@
 }
 
 .scrollable-cell {
-    max-height: 160px;
-    overflow-y: auto;
-    vertical-align: top;
-    word-break: break-word;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
+  max-height: 160px;
+  overflow-y: auto;
+  vertical-align: top;
+  word-break: break-word;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 .scrollable-cell::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent !important;
 }
+
+/* .scrollable-cell {
+    max-height: 48px;
+    overflow-y: auto;
+    vertical-align: top;
+    word-break: break-word;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scrollbar-width: none;        
+    -ms-overflow-style: none;     
+  }
+  .scrollable-cell::-webkit-scrollbar {
+    display: none !important;                 
+  } */
 
 .recipient-cell {
     text-align: center;

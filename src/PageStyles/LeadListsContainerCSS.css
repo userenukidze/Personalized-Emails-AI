@@ -132,6 +132,20 @@ body {
     flex-direction: column;
     gap: 10px;
     word-break: break-word;
+    transition:
+      background 0.2s,
+      color 0.2s,
+      border 0.2s,
+      transform 0.18s cubic-bezier(.4,1.4,.6,1),
+      box-shadow 0.18s cubic-bezier(.4,1.4,.6,1);
+  }
+  
+  .leadlist-card:hover {
+    background: #201f1f; /* a tad lighter than #171717 */
+    color: var(--text-main);
+    border: 1px solid var(--table-border);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
   }
   
   .leadlist-card-title {

@@ -3,6 +3,8 @@ import '../PageStyles/MainPageCSS.css'
 import TableComponent from '../Components/TableComponent'
 import supabase from '../helper/supabaseClient'
 import Navbar from '../Components/Navbar'
+import { IoCopy } from "react-icons/io5";
+import { BsArrowRepeat } from "react-icons/bs";
 
 interface Row {
   recipient: string
@@ -35,9 +37,15 @@ function MainPage() {
   const [generatedEmails, setGeneratedEmails] = useState<{ [idx: number]: string }>({})
   const [generatingRows, setGeneratingRows] = useState<number[]>([])
 
+  const [showContextOptions, setShowContextOptions] = useState(false)
+  const [showContextHelp, setShowContextHelp] = useState(false)
+  const [contextOptions, setContextOptions] = useState<string[]>([]);
+
   const recipientRef = useRef<HTMLTextAreaElement>(null)
   const linksRef = useRef<HTMLTextAreaElement>(null)
   const linkedinRef = useRef<HTMLTextAreaElement>(null)
+  const contextRef = useRef<HTMLTextAreaElement>(null)
+  const scriptRef = useRef<HTMLTextAreaElement>(null)
 
   // Restore from localStorage
   useEffect(() => {
@@ -72,6 +80,21 @@ function MainPage() {
     else
       localStorage.removeItem('selectedEmail')
   }, [selectedEmail])
+
+  // Fix textarea height on load/restore
+  useEffect(() => {
+    if (contextRef.current) {
+      contextRef.current.style.height = 'auto'
+      contextRef.current.style.height = Math.min(contextRef.current.scrollHeight, 400) + 'px'
+    }
+  }, [contextInput])
+
+  useEffect(() => {
+    if (scriptRef.current) {
+      scriptRef.current.style.height = 'auto'
+      scriptRef.current.style.height = Math.min(scriptRef.current.scrollHeight, 400) + 'px'
+    }
+  }, [exampleScript])
 
   // Fetch lead lists for popup
   useEffect(() => {
@@ -203,7 +226,7 @@ function MainPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/generate', {
+      const response = await fetch('http://localhost:4000/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -250,12 +273,228 @@ function MainPage() {
     }
   }
 
+  // ONLY THIS FUNCTION IS CHANGED TO IMPLEMENT THE SOLUTION
+  const handleProcessContext = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/refine-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: contextInput }),
+      });
+      const data = await response.json();
+      if (Array.isArray(data.refined) && data.refined.length > 0) {
+        setContextOptions(data.refined);
+      } else if (typeof data.refined === 'string' && data.refined.trim() !== '') {
+        setContextOptions([data.refined]);
+      } else {
+        setContextOptions([]);
+      }
+      setShowContextOptions(true);
+    } catch (err) {
+      setContextOptions([]);
+      setShowContextOptions(true);
+      console.error('Error refining context:', err);
+    }
+  };
+
   return (
     <div className="container">
       <Navbar />
 
-      {/* Load a Lead List Button */}
-      
+      {/* Section for context, script, and choose email */}
+      <div
+        style={{
+          background: 'var(--table-header-bg, #f8fafc)',
+          border: '1px solid var(--table-border, #e9e9e9)',
+          borderRadius: 16,
+          padding: 32,
+          marginTop: 40,
+          marginBottom: 40,
+          width: '100%',
+          maxWidth: '100%',
+          marginLeft: 0,
+          marginRight: 0,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <h1 style={{ margin: 0 }}>Context & Script</h1>
+          <button
+            className="add-emails-btn"
+            onClick={() => setShowEmailsPopup(true)}
+          >
+            Choose Email
+          </button>
+        </div>
+        {selectedEmail && (
+          <div style={{ margin: '16px 0 0 0', fontWeight: 500, color: '#3da175' }}>
+            Sending from: {selectedEmail.email}
+          </div>
+        )}
+
+         <div style={{ marginTop: 32, display:"flex", flexDirection: 'column', gap: 12 }}>
+        <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Context:</label>
+        <textarea
+          ref={contextRef}
+          className="growing-textarea"
+          style={{
+            minHeight: '100px',
+            maxHeight: '400px',
+            overflow: 'auto',
+            borderRadius: '12px',
+            resize: 'none',
+            padding: '10px',
+            width: '100%',
+            boxSizing: 'border-box',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            marginTop: 8,
+          }}
+          rows={4}
+          placeholder="Enter your context here..."
+          value={contextInput}
+          onChange={e => setContextInput(e.target.value)}
+          onInput={e => {
+            const target = e.target as HTMLTextAreaElement
+            target.style.height = 'auto'
+            target.style.height = Math.min(target.scrollHeight, 400) + 'px'
+          }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12}}>
+          <div className="buttonContainer" style={{width: '100%', display: 'flex', flexDirection:"row", alignItems: 'center',justifyContent:"center",gap:30}}>
+            <button
+              className="add-context-btn"
+              type="button"
+              onClick={handleProcessContext}
+            >
+              კონტექსტის გადამუშავება
+              <BsArrowRepeat size={25}/>
+            </button>
+            <button
+              type="button"
+              className="add-context-btn"
+              style={{
+                width: 32,
+                height: 32,
+                padding: 0,
+                borderRadius: '50%',
+                fontSize: 18,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="What does this do?"
+              onClick={() => setShowContextHelp(prev => !prev)}
+            >
+              ?
+            </button>
+          </div>
+        </div>
+        {showContextHelp && (
+          <div style={{ color: '#aaa', fontSize: 15,textAlign:"center" }}>
+          ამ ღილაკის მეშვეობით თქვენ მიიღებთ ალტერნატიულ, გაუმჯობესებულ კონტექსტს, რომელიც დაეხმარება ხელოვნურ ინტელექტს, შექმნას უფრო ზუსტი და ეფექტური იმეილები. ასე თავიდან აირიდებთ არასწორად გაგებულ კონტექსტზე აგებულ შეტყობინებებს.
+          </div>
+        )}
+        {showContextOptions && (
+  <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    {contextOptions.length > 0 ? (
+      contextOptions.map((option, idx) => (
+        <div
+          key={idx}
+          style={{
+            background: 'var(--table-bg)',
+            color: 'var(--text-main)',
+            border: '1px solid var(--table-border)',
+            borderRadius: 8,
+            padding: '12px 18px',
+            position: 'relative',
+            textAlign:"justify"
+          }}
+        >
+
+          
+          <div
+            className='copy-context-btn'
+            onClick={() => setContextInput(option)}
+            title="Copy to context"
+          >
+            <IoCopy size={22}/>
+          </div>
+          {option}
+        </div>
+      ))
+    ) : (
+      <div
+        style={{
+          background: 'var(--table-bg)',
+          color: 'var(--text-main)',
+          border: '1px solid var(--table-border)',
+          borderRadius: 8,
+          padding: '12px 18px'
+        }}
+      >
+        No options available.
+      </div>
+    )}
+  </div>
+)}
+      </div>
+
+        <div style={{ marginTop: 80 }}>
+          <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Example Script:</label>
+          <textarea
+            ref={scriptRef}
+            className="growing-textarea"
+            style={{
+              minHeight: '100px',
+              maxHeight: '400px',
+              overflow: 'auto',
+              borderRadius: '12px',
+              resize: 'none',
+              padding: '10px',
+              width: '100%',
+              boxSizing: 'border-box',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              marginTop: 8,
+            }}
+            rows={4}
+            placeholder="Enter your example script here..."
+            value={exampleScript}
+            onChange={e => setExampleScript(e.target.value)}
+            onInput={e => {
+              const target = e.target as HTMLTextAreaElement
+              target.style.height = 'auto'
+              target.style.height = Math.min(target.scrollHeight, 400) + 'px'
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="generateAndSendButton" >
+        <button
+          className="add-emails-btn"
+          onClick={handleGenerateAndSend}
+          disabled={rows.length === 0 || sendLoading}
+        >
+          {sendLoading ? "Generating..." : "Generate & Send"}
+        </button>
+      </div>
+
+      <div style={{ marginTop: 10, marginBottom: 24, width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <button
+          className="add-emails-btn"
+          onClick={() => setShowLeadListsPopup(true)}
+        >
+          Load a Lead List
+        </button>
+        {selectedLeadList && (
+          <span style={{ marginLeft: 18, fontWeight: 500, color: '#3da175' }}>
+            Loaded: {selectedLeadList.lead_list_name}
+          </span>
+        )}
+      </div>
 
       {/* Lead List Popup */}
       {showLeadListsPopup && (
@@ -338,139 +577,6 @@ function MainPage() {
           </div>
         </div>
       )}
-
-      {/* Section for context, script, and choose email */}
-      <div
-        style={{
-          background: 'var(--table-header-bg, #f8fafc)',
-          border: '1px solid var(--table-border, #e9e9e9)',
-          borderRadius: 16,
-          padding: 32,
-          marginTop: 40,
-          marginBottom: 40,
-          width: '100%',
-          maxWidth: '100%',
-          marginLeft: 0,
-          marginRight: 0,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0 }}>Context & Script</h1>
-          <button
-            style={{
-              background: 'var(--table-header-bg)',
-              color: 'var(--text-main)',
-              border: '1px solid var(--table-border)',
-              borderRadius: 8,
-              padding: '10px 28px',
-              fontWeight: 600,
-              fontSize: 16,
-              cursor: 'pointer',
-              transition: 'background 0.2s, color 0.2s, border 0.2s'
-            }}
-            onClick={() => setShowEmailsPopup(true)}
-          >
-            Choose Email
-          </button>
-        </div>
-        {selectedEmail && (
-          <div style={{ margin: '16px 0 0 0', fontWeight: 500, color: '#3da175' }}>
-            Sending from: {selectedEmail.email}
-          </div>
-        )}
-        <div style={{ marginTop: 32 }}>
-          <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Context:</label>
-          <textarea
-            className="growing-textarea"
-            style={{
-              minHeight: '100px',
-              maxHeight: '400px',
-              overflow: 'auto',
-              borderRadius: '12px',
-              resize: 'none',
-              padding: '10px',
-              width: '100%',
-              boxSizing: 'border-box',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              marginTop: 8,
-            }}
-            rows={4}
-            placeholder="Enter your context here..."
-            value={contextInput}
-            onChange={e => setContextInput(e.target.value)}
-            onInput={e => {
-              const target = e.target as HTMLTextAreaElement
-              target.style.height = 'auto'
-              target.style.height = Math.min(target.scrollHeight, 400) + 'px'
-            }}
-          />
-        </div>
-        <div style={{ marginTop: 32 }}>
-          <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Example Script:</label>
-          <textarea
-            className="growing-textarea"
-            style={{
-              minHeight: '100px',
-              maxHeight: '400px',
-              overflow: 'auto',
-              borderRadius: '12px',
-              resize: 'none',
-              padding: '10px',
-              width: '100%',
-              boxSizing: 'border-box',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              marginTop: 8,
-            }}
-            rows={4}
-            placeholder="Enter your example script here..."
-            value={exampleScript}
-            onChange={e => setExampleScript(e.target.value)}
-            onInput={e => {
-              const target = e.target as HTMLTextAreaElement
-              target.style.height = 'auto'
-              target.style.height = Math.min(target.scrollHeight, 400) + 'px'
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="generateAndSendButton">
-        <button
-          className="supabase-btn"
-          onClick={handleGenerateAndSend}
-          disabled={rows.length === 0 || sendLoading}
-        >
-          {sendLoading ? "Generating..." : "Generate & Send"}
-        </button>
-      </div>
-
-
-      <div style={{ marginTop: 50, marginBottom: 24,width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-        <button
-          style={{
-            background: 'var(--table-header-bg)',
-            color: 'var(--text-main)',
-            border: '1px solid var(--table-border)',
-            borderRadius: 8,
-            padding: '10px 28px',
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: 'pointer',
-            transition: 'background 0.2s, color 0.2s, border 0.2s'
-          }}
-          onClick={() => setShowLeadListsPopup(true)}
-        >
-          Load a Lead List
-        </button>
-        {selectedLeadList && (
-          <span style={{ marginLeft: 18, fontWeight: 500, color: '#3da175' }}>
-            Loaded: {selectedLeadList.lead_list_name}
-          </span>
-        )}
-      </div>
 
       <div className="mainpage-table-wrapper">
         {selectedLeadList && (

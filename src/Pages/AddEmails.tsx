@@ -41,7 +41,7 @@ function AddEmails() {
           style={{ marginBottom: 24 }}
           onClick={() => {
             if (userId) {
-              window.location.href = `http://localhost:3000/nylas/auth?userId=${userId}`;
+              window.location.href = `http://localhost:4000/nylas/auth?userId=${userId}`;
             } else {
               alert('User not found. Please log in.');
             }
@@ -50,7 +50,7 @@ function AddEmails() {
         >
           Add an Email
         </button>
-        <div className="emails-row-wrapper">
+        <div className="emails-row-wrapper" >
           {loading ? (
             <div>Loading...</div>
           ) : (
@@ -66,7 +66,7 @@ function AddEmails() {
                 className="email-card add-email-plus"
                 onClick={() => {
                   if (userId) {
-                    window.location.href = `http://localhost:3000/nylas/auth?userId=${userId}`;
+                    window.location.href = `http://localhost:4000/nylas/auth?userId=${userId}`;
                   } else {
                     alert('User not found. Please log in.');
                   }

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import "../ComponentStyles/TableComponentCSS.css"
-import { MdOutlineMailOutline } from "react-icons/md"
+import { MdOutlineMailOutline, MdEdit, MdDelete } from "react-icons/md"
 import supabase from '../helper/supabaseClient'
 
 interface LeadRow {
@@ -27,6 +27,12 @@ const LeadsTable: React.FC<LeadsTableProps> = ({ parentLeadListId }) => {
   const [allChecked, setAllChecked] = useState(false)
   const [popupIdx, setPopupIdx] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [editIdx, setEditIdx] = useState<number | null>(null)
+  const [editRecipient, setEditRecipient] = useState('')
+  const [editLinkedin, setEditLinkedin] = useState('')
+  const [editLinks, setEditLinks] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
+  const [deleteLoadingIdx, setDeleteLoadingIdx] = useState<number | null>(null)
 
   const recipientRef = useRef<HTMLTextAreaElement | null>(null)
   const linkedinRef = useRef<HTMLTextAreaElement | null>(null)
@@ -82,6 +88,62 @@ const LeadsTable: React.FC<LeadsTableProps> = ({ parentLeadListId }) => {
     setAllChecked(checked)
   }
 
+  // Edit row handler
+  const handleEdit = (idx: number) => {
+    setEditIdx(idx)
+    setEditRecipient(rows[idx].Recipient_Mail)
+    setEditLinkedin(rows[idx].Linkedin)
+    setEditLinks(rows[idx].Links_And_Sources)
+  }
+
+  // Save edit handler
+  const handleEditSave = async (idx: number) => {
+    setEditLoading(true)
+    const row = rows[idx]
+    const { error } = await supabase
+      .from('Leads')
+      .update({
+        Recipient_Mail: editRecipient,
+        Linkedin: editLinkedin,
+        Links_And_Sources: editLinks,
+      })
+      .eq('id', row.id)
+    setEditLoading(false)
+    if (!error) {
+      const updatedRows = [...rows]
+      updatedRows[idx] = {
+        ...row,
+        Recipient_Mail: editRecipient,
+        Linkedin: editLinkedin,
+        Links_And_Sources: editLinks,
+      }
+      setRows(updatedRows)
+      setEditIdx(null)
+    } else {
+      alert('Failed to update row: ' + error.message)
+    }
+  }
+
+  // Delete row handler
+  const handleDelete = async (idx: number) => {
+    setDeleteLoadingIdx(idx)
+    const row = rows[idx]
+    const { error } = await supabase
+      .from('Leads')
+      .delete()
+      .eq('id', row.id)
+    setDeleteLoadingIdx(null)
+    if (!error) {
+      const updatedRows = [...rows]
+      updatedRows.splice(idx, 1)
+      setRows(updatedRows)
+      setEditIdx(null)
+      setCurrentPage(1)
+    } else {
+      alert('Failed to delete row: ' + error.message)
+    }
+  }
+
   // Pagination logic
   const totalPages = Math.ceil(rows.length / PAGE_SIZE)
   const paginatedRows = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
@@ -92,9 +154,10 @@ const LeadsTable: React.FC<LeadsTableProps> = ({ parentLeadListId }) => {
         <colgroup>
           <col style={{ width: '5%' }} />
           <col style={{ width: '5%' }} />
-          <col style={{ width: '30%' }} />
-          <col style={{ width: '30%' }} />
-          <col style={{ width: '30%' }} />
+          <col style={{ width: '25%' }} />
+          <col style={{ width: '25%' }} />
+          <col style={{ width: '25%' }} />
+          <col style={{ width: '15%' }} />
         </colgroup>
         <thead>
           <tr className="mainpage-table-header-row">
@@ -109,32 +172,115 @@ const LeadsTable: React.FC<LeadsTableProps> = ({ parentLeadListId }) => {
             <th className="mainpage-table-header">Recipient Mail</th>
             <th className="mainpage-table-header">Linkedin</th>
             <th className="mainpage-table-header">Links &amp; Sources</th>
+            <th className="mainpage-table-header" style={{ textAlign: 'center' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {paginatedRows.map((row, idx) => (
-            <tr key={row.id}>
-              <td className="mainpage-table-cell checkbox-cell">
-                <input
-                  type="checkbox"
-                  checked={!!selectedRows[(currentPage - 1) * PAGE_SIZE + idx]}
-                  onChange={() => onToggleRow((currentPage - 1) * PAGE_SIZE + idx)}
-                />
-              </td>
-              <td className="mainpage-table-cell v-btn-cell">
-                <button
-                  className="v-btn"
-                  onClick={() => setPopupIdx((currentPage - 1) * PAGE_SIZE + idx)}
-                  type="button"
-                >
-                  <MdOutlineMailOutline />
-                </button>
-              </td>
-              <td className="mainpage-table-cell scrollable-cell recipient-cell">{row.Recipient_Mail}</td>
-              <td className="mainpage-table-cell scrollable-cell">{row.Linkedin}</td>
-              <td className="mainpage-table-cell scrollable-cell">{row.Links_And_Sources}</td>
-            </tr>
-          ))}
+          {paginatedRows.map((row, idx) => {
+            const realIdx = (currentPage - 1) * PAGE_SIZE + idx
+            const isEditing = editIdx === realIdx
+            return (
+              <tr key={row.id}>
+                <td className="mainpage-table-cell checkbox-cell">
+                  <input
+                    type="checkbox"
+                    checked={!!selectedRows[realIdx]}
+                    onChange={() => onToggleRow(realIdx)}
+                  />
+                </td>
+                <td className="mainpage-table-cell v-btn-cell">
+                  <button
+                    className="v-btn"
+                    onClick={() => setPopupIdx(realIdx)}
+                    type="button"
+                  >
+                    <MdOutlineMailOutline />
+                  </button>
+                </td>
+                {isEditing ? (
+                  <>
+                    <td className="mainpage-table-cell recipient-cell">
+                      <input
+                        value={editRecipient}
+                        onChange={e => setEditRecipient(e.target.value)}
+                        className="mainpage-input"
+                        style={{ width: '100%', height: 36, textAlign: 'center' }}
+                      />
+                    </td>
+                    <td className="mainpage-table-cell">
+                      <input
+                        value={editLinkedin}
+                        onChange={e => setEditLinkedin(e.target.value)}
+                        className="mainpage-input"
+                        style={{ width: '100%', height: 36, textAlign: 'center' }}
+                      />
+                    </td>
+                    <td className="mainpage-table-cell">
+                      <input
+                        value={editLinks}
+                        onChange={e => setEditLinks(e.target.value)}
+                        className="mainpage-input"
+                        style={{ width: '100%', height: 36, textAlign: 'center' }}
+                      />
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="mainpage-table-cell scrollable-cell recipient-cell">{row.Recipient_Mail}</td>
+                    <td className="mainpage-table-cell scrollable-cell">{row.Linkedin}</td>
+                    <td className="mainpage-table-cell scrollable-cell">{row.Links_And_Sources}</td>
+                  </>
+                )}
+                <td className="mainpage-table-cell" style={{ minWidth: 120 }}>
+                  {isEditing ? (
+                    <>
+                      <button
+                        className="mainpage-save-btn"
+                        style={{ marginRight: 6 }}
+                        onClick={() => handleEditSave(realIdx)}
+                        disabled={editLoading}
+                      >
+                        {editLoading ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        className="mainpage-save-btn"
+                        onClick={() => setEditIdx(null)}
+                        disabled={editLoading}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <div className="buttonsContainer" style={{ width: "100%", height: "100%", display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 20 }}>
+                      <div
+                        className="mainpage-edit-btn"
+                        style={{ marginRight: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 36, width: 36, cursor: 'pointer' }}
+                        onClick={() => handleEdit(realIdx)}
+                      >
+                        <MdEdit size={25} color='#3da175' />
+                      </div>
+                      <div
+                        className={`mainpage-delete-btn${deleteLoadingIdx === realIdx ? ' disabled' : ''}`}
+                        onClick={deleteLoadingIdx === realIdx ? undefined : () => handleDelete(realIdx)}
+                        style={{
+                          pointerEvents: deleteLoadingIdx === realIdx ? 'none' : 'auto',
+                          opacity: deleteLoadingIdx === realIdx ? 0.5 : 1,
+                          cursor: deleteLoadingIdx === realIdx ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: 36,
+                          width: 36
+                        }}
+                      >
+                        {deleteLoadingIdx === realIdx ? "..." : <MdDelete size={25} color='red' />}
+                      </div>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
           <tr>
             <td className="mainpage-table-cell checkbox-cell"></td>
             <td className="mainpage-table-cell v-btn-cell"></td>
@@ -175,6 +321,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({ parentLeadListId }) => {
                 {loading ? "Saving..." : "Save"}
               </button>
             </td>
+            <td className="mainpage-table-cell"></td>
           </tr>
         </tbody>
       </table>

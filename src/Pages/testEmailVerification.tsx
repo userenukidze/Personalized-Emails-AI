@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 async function verifyEmail(email: string, name?: string) {
   try {
-    const response = await fetch('http://localhost:3000/email/verify-email', {
+    const response = await fetch('http://localhost:4000/email/verify-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, name }),
@@ -35,7 +35,7 @@ async function sendEmail({
   html?: string
 }) {
   try {
-    const response = await fetch('http://localhost:3000/email/send-email', {
+    const response = await fetch('http://localhost:4000/email/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to, fromName, fromEmail, subject, text, html }),
@@ -179,7 +179,7 @@ function TestEmailVerification() {
         </button>
       </form>
 
-      <button onClick={() => window.location.href = 'http://localhost:3000/nylas/auth'}>
+      <button onClick={() => window.location.href = 'http://localhost:4000/nylas/auth'}>
         Connect Email
       </button>
     </div>
