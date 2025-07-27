@@ -41,11 +41,27 @@ function MainPage() {
   const [showContextHelp, setShowContextHelp] = useState(false)
   const [contextOptions, setContextOptions] = useState<string[]>([]);
 
+  const [offeringInput, setOfferingInput] = useState('');
+  const offeringRef = useRef<HTMLTextAreaElement>(null);
+
+  const [offeringOptions, setOfferingOptions] = useState<string[]>([]);
+  const [showOfferingOptions, setShowOfferingOptions] = useState(false);
+  const [showOfferingHelp, setShowOfferingHelp] = useState(false);
+
   const recipientRef = useRef<HTMLTextAreaElement>(null)
   const linksRef = useRef<HTMLTextAreaElement>(null)
   const linkedinRef = useRef<HTMLTextAreaElement>(null)
   const contextRef = useRef<HTMLTextAreaElement>(null)
   const scriptRef = useRef<HTMLTextAreaElement>(null)
+
+
+
+ 
+
+  // Fix textarea height on load/restore for offering
+
+
+
 
   // Restore from localStorage
   useEffect(() => {
@@ -57,6 +73,8 @@ function MainPage() {
     if (savedLeadList) setSelectedLeadList(JSON.parse(savedLeadList))
     const savedEmail = localStorage.getItem('selectedEmail')
     if (savedEmail) setSelectedEmail(JSON.parse(savedEmail))
+    const savedOffering = localStorage.getItem('offeringInput');
+    if (savedOffering) setOfferingInput(savedOffering);
   }, [])
 
   useEffect(() => {
@@ -66,6 +84,10 @@ function MainPage() {
   useEffect(() => {
     localStorage.setItem('exampleScript', exampleScript)
   }, [exampleScript])
+
+  useEffect(() => {
+    localStorage.setItem('offeringInput', offeringInput);
+  }, [offeringInput]);
 
   useEffect(() => {
     if (selectedLeadList)
@@ -95,6 +117,13 @@ function MainPage() {
       scriptRef.current.style.height = Math.min(scriptRef.current.scrollHeight, 400) + 'px'
     }
   }, [exampleScript])
+
+  useEffect(() => {
+    if (offeringRef.current) {
+      offeringRef.current.style.height = 'auto';
+      offeringRef.current.style.height = Math.min(offeringRef.current.scrollHeight, 400) + 'px';
+    }
+  }, [offeringInput]);
 
   // Fetch lead lists for popup
   useEffect(() => {
@@ -210,41 +239,42 @@ function MainPage() {
     setGeneratingRows(checkedIndexes)
     setSendLoading(true)
     setGeneratedEmails({})
-
+  
     const formattedRows = checkedRows.map(row => ({
       name: row.recipient,
       linkedin: row.linkedin,
       website: row.links,
     }))
-
+  
     const payload = {
       context: contextInput,
       exampleScript: exampleScript,
+      offering: offeringInput, // <-- Add this line
       recipients: formattedRows,
       fromEmail: selectedEmail?.email,
       grantId: selectedEmail?.grant_id
     }
-
+  
     try {
       const response = await fetch('http://localhost:4000/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-
+  
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
-
+  
       while (true) {
         if (!reader) break
         const { value, done } = await reader.read()
         if (done) break
         buffer += decoder.decode(value, { stream: true })
-
+  
         let parts = buffer.split('\n\n')
         buffer = parts.pop() || ''
-
+  
         for (const part of parts) {
           if (part.startsWith('data: ')) {
             const data = JSON.parse(part.replace('data: ', ''))
@@ -297,6 +327,29 @@ function MainPage() {
     }
   };
 
+  const handleProcessOffering = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/refine-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: offeringInput }),
+      });
+      const data = await response.json();
+      if (Array.isArray(data.refined) && data.refined.length > 0) {
+        setOfferingOptions(data.refined);
+      } else if (typeof data.refined === 'string' && data.refined.trim() !== '') {
+        setOfferingOptions([data.refined]);
+      } else {
+        setOfferingOptions([]);
+      }
+      setShowOfferingOptions(true);
+    } catch (err) {
+      setOfferingOptions([]);
+      setShowOfferingOptions(true);
+      console.error('Error refining offering:', err);
+    }
+  };
+
   return (
     <div className="container">
       <Navbar />
@@ -331,6 +384,118 @@ function MainPage() {
             Sending from: {selectedEmail.email}
           </div>
         )}
+
+
+<div style={{ fontWeight: 600, fontSize: 18, marginTop: 40 }}>Enter Offering:</div>
+        <textarea
+          ref={offeringRef}
+          className="growing-textarea"
+          style={{
+            minHeight: '100px',
+            maxHeight: '400px',
+            overflow: 'auto',
+            borderRadius: '12px',
+            resize: 'none',
+            padding: '10px',
+            width: '100%',
+            boxSizing: 'border-box',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            marginTop: 8,
+          }}
+          rows={4}
+          placeholder="Enter your offering here..."
+          value={offeringInput}
+          onChange={e => setOfferingInput(e.target.value)}
+          onInput={e => {
+            const target = e.target as HTMLTextAreaElement
+            target.style.height = 'auto'
+            target.style.height = Math.min(target.scrollHeight, 400) + 'px'
+          }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+          <div className="buttonContainer" style={{ width: '100%', display: 'flex', flexDirection: "row", alignItems: 'center', justifyContent: "center", gap: 30 }}>
+            <button
+              className="add-context-btn"
+              type="button"
+              onClick={handleProcessOffering}
+            >
+              შეთავაზების გადამუშავება
+              <BsArrowRepeat size={25} />
+            </button>
+            <button
+              type="button"
+              className="add-context-btn"
+              style={{
+                width: 32,
+                height: 32,
+                padding: 0,
+                borderRadius: '50%',
+                fontSize: 18,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="What does this do?"
+              onClick={() => setShowOfferingHelp(prev => !prev)}
+            >
+              ?
+            </button>
+          </div>
+        </div>
+
+        {showOfferingHelp && (
+          <div style={{ color: '#aaa', fontSize: 15, textAlign: "center" }}>
+            ამ ღილაკის მეშვეობით თქვენ მიიღებთ ალტერნატიულ, გაუმჯობესებულ შეთავაზებას, რომელიც დაეხმარება ხელოვნურ ინტელექტს, შექმნას უფრო ზუსტი და ეფექტური იმეილები.
+          </div>
+        )}
+        {showOfferingOptions && (
+          <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {offeringOptions.length > 0 ? (
+              offeringOptions.map((option, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: 'var(--table-bg)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--table-border)',
+                    borderRadius: 8,
+                    padding: '12px 18px',
+                    position: 'relative',
+                    textAlign: "justify"
+                  }}
+                >
+                  <div
+                  className='copy-context-btn'
+                  onClick={() => setOfferingInput(option)}
+                  title="Copy to offering">
+                  <IoCopy size={22}/>
+                  </div>
+                        {option}
+                  </div>
+
+                  
+              ))
+            ) : (
+              <div
+                style={{
+                  background: 'var(--table-bg)',
+                  color: 'var(--text-main)',
+                  border: '1px solid var(--table-border)',
+                  borderRadius: 8,
+                  padding: '12px 18px'
+                }}
+              >
+                No options available.
+              </div>
+            )}
+          </div>
+        )}
+
+
+
+
 
          <div style={{ marginTop: 32, display:"flex", flexDirection: 'column', gap: 12 }}>
         <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Context:</label>
@@ -471,6 +636,11 @@ function MainPage() {
           />
         </div>
       </div>
+
+
+
+
+
 
       <div className="generateAndSendButton" >
         <button
