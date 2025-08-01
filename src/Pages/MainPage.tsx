@@ -5,6 +5,7 @@ import supabase from '../helper/supabaseClient'
 import Navbar from '../Components/Navbar'
 import { IoCopy } from "react-icons/io5";
 import { BsArrowRepeat } from "react-icons/bs";
+import FileUpload from '../Components/FileUpload';
 
 interface Row {
   recipient: string
@@ -48,15 +49,15 @@ function MainPage() {
   const [showOfferingOptions, setShowOfferingOptions] = useState(false);
   const [showOfferingHelp, setShowOfferingHelp] = useState(false);
 
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [campaignId, setCampaignId] = useState(() => crypto.randomUUID());
+
   const recipientRef = useRef<HTMLTextAreaElement>(null)
   const linksRef = useRef<HTMLTextAreaElement>(null)
   const linkedinRef = useRef<HTMLTextAreaElement>(null)
   const contextRef = useRef<HTMLTextAreaElement>(null)
   const scriptRef = useRef<HTMLTextAreaElement>(null)
 
-
-
- 
 
   // Fix textarea height on load/restore for offering
 
@@ -234,75 +235,82 @@ function MainPage() {
   }
 
   const handleGenerateAndSend = async () => {
-    const checkedRows = rows.filter((_, idx) => selectedRows[idx])
-    const checkedIndexes = rows.map((_, idx) => idx).filter(idx => selectedRows[idx])
-    setGeneratingRows(checkedIndexes)
-    setSendLoading(true)
-    setGeneratedEmails({})
-  
-    const formattedRows = checkedRows.map(row => ({
+    // Generate a new campaignId for each send
+    const newCampaignId = crypto.randomUUID();
+    setCampaignId(newCampaignId);
+
+    const checkedRows = rows.filter((_, idx) => selectedRows[idx]);
+    const checkedIndexes = rows.map((_, idx) => idx).filter(idx => selectedRows[idx]);
+    setGeneratingRows(checkedIndexes);
+    setSendLoading(true);
+    setGeneratedEmails({});
+
+    // --- ONLY THIS BLOCK IS CHANGED TO USE FORMDATA FOR FILE UPLOAD ---
+    const formData = new FormData();
+    formData.append('context', contextInput);
+    formData.append('exampleScript', exampleScript);
+    formData.append('offering', offeringInput);
+    formData.append('fromEmail', selectedEmail?.email || '');
+    formData.append('grantId', selectedEmail?.grant_id || '');
+    formData.append('recipients', JSON.stringify(checkedRows.map(row => ({
       name: row.recipient,
       linkedin: row.linkedin,
       website: row.links,
-    }))
-  
-    const payload = {
-      context: contextInput,
-      exampleScript: exampleScript,
-      offering: offeringInput, // <-- Add this line
-      recipients: formattedRows,
-      fromEmail: selectedEmail?.email,
-      grantId: selectedEmail?.grant_id
-    }
-  
+    }))));
+    formData.append('campaignId', newCampaignId); // <-- Add campaignId here
+    uploadedFiles.forEach(file => {
+      formData.append('files', file);
+    });
+    // ---------------------------------------------------------------
+
     try {
       const response = await fetch('http://localhost:4000/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-  
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-  
+        body: formData,
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
       while (true) {
-        if (!reader) break
-        const { value, done } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-  
-        let parts = buffer.split('\n\n')
-        buffer = parts.pop() || ''
-  
+        if (!reader) break;
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+
         for (const part of parts) {
           if (part.startsWith('data: ')) {
-            const data = JSON.parse(part.replace('data: ', ''))
+            const data = JSON.parse(part.replace('data: ', ''));
             const idx = checkedRows.findIndex(r =>
               r.recipient === data.recipient.name &&
               r.linkedin === data.recipient.linkedin &&
               r.links === data.recipient.website
-            )
+            );
             if (idx !== -1) {
               setGeneratedEmails(prev => ({
                 ...prev,
                 [checkedIndexes[idx]]: data.openai
-              }))
+              }));
             }
           }
           if (part.startsWith('event: end')) {
-            setSendLoading(false)
-            setGeneratingRows([])
+            setSendLoading(false);
+            setGeneratingRows([]);
           }
         }
       }
     } catch (err) {
-      alert('Failed to send request' + (err instanceof Error ? `: ${err.message}` : ''))
-      setSendLoading(false)
-      setGeneratingRows([])
+      alert('Failed to send request' + (err instanceof Error ? `: ${err.message}` : ''));
+      setSendLoading(false);
+      setGeneratingRows([]);
     }
   }
 
+  
   // ONLY THIS FUNCTION IS CHANGED TO IMPLEMENT THE SOLUTION
   const handleProcessContext = async () => {
     try {
@@ -350,6 +358,19 @@ function MainPage() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setUploadedFiles(prev =>
+        [...prev, ...newFiles].filter(
+          (file, idx, arr) => arr.findIndex(f => f.name === file.name && f.size === file.size) === idx
+        )
+      );
+      // Optionally, reset the input value so the same file can be selected again
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="container">
       <Navbar />
@@ -386,7 +407,7 @@ function MainPage() {
         )}
 
 
-<div style={{ fontWeight: 600, fontSize: 18, marginTop: 40 }}>Enter Offering:</div>
+        <div style={{ fontWeight: 600, fontSize: 18, marginTop: 40 }}>Enter Offering:</div>
         <textarea
           ref={offeringRef}
           className="growing-textarea"
@@ -605,7 +626,6 @@ function MainPage() {
   </div>
 )}
       </div>
-
         <div style={{ marginTop: 80 }}>
           <label style={{ fontWeight: 600, fontSize: 18 }}>Enter Example Script:</label>
           <textarea
@@ -636,6 +656,12 @@ function MainPage() {
           />
         </div>
       </div>
+
+
+
+
+      <FileUpload uploadedFiles={uploadedFiles} setUploadedFiles={setUploadedFiles} />
+
 
 
 
